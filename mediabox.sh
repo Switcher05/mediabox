@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check that script was run not as root or with sudo
+if [ "$EUID" -eq 0 ]
+  then echo "Please do not run this script as root or using sudo"
+  exit
+fi
+
 # set -x
 
 # See if we need to check GIT for updates
@@ -39,13 +45,14 @@ if [ -e 1.env ]; then
     tvdirectory=$(grep TVDIR 1.env | cut -d = -f2)
     moviedirectory=$(grep MOVIEDIR 1.env | cut -d = -f2)
     musicdirectory=$(grep MUSICDIR 1.env | cut -d = -f2)
-    # Echo back the media directioies to see if changes are needed
+    # Echo back the media directioies, and other info to see if changes are needed
     printf "These are the Media Directory paths currently configured.\\n"
     printf "Your DOWNLOAD Directory is: %s \\n" "$dldirectory"
     printf "Your TV Directory is: %s \\n" "$tvdirectory"
     printf "Your MOVIE Directory is: %s \\n" "$moviedirectory"
     printf "Your MUSIC Directory is: %s \\n" "$musicdirectory"
-    read  -r -n 1 -p "Are these directiores still correct? (y/n) " diranswer
+    read  -r -p "Are these directiores still correct? (y/n) " diranswer `echo \n`
+    read  -r -p "Do you need to change your PIA Credentials? (y/n) " piaanswer `echo \n`
     # Now we need ".env" to exist again so we can stop just the Medaibox containers
     mv 1.env .env
     # Stop the current Mediabox stack
@@ -74,9 +81,14 @@ slash=$(ip a | grep "$locip" | cut -d ' ' -f6 | awk -F '/' '{print $2}')
 lannet=$(awk -F"." '{print $1"."$2"."$3".0"}'<<<$locip)/$slash
 
 # Get Private Internet Access Info
-if [ -z "$piauname" ]; then
+if [ -z "$piaanswer" ]; then
 read -r -p "What is your PIA Username?: " piauname
 read -r -s -p "What is your PIA Password? (Will not be echoed): " piapass
+printf "\\n\\n"
+fi
+if [ "$piaanswer" == "y" ]; then
+read -r -p "What is your New PIA Username?: " piauname
+read -r -s -p "What is your New PIA Password? (Will not be echoed): " piapass
 printf "\\n\\n"
 fi
 
@@ -225,6 +237,8 @@ echo "VPN_REMOTE=$vpnremote"
 echo ".env file creation complete"
 printf "\\n\\n"
 
+# Adjust for the Switch to linuxserver/sickchill
+docker rm -f sickchill > /dev/null 2>&1
 # Adjust for the Tautulli replacement of PlexPy
 docker rm -f plexpy > /dev/null 2>&1
 # Adjust for the Ouroboros replacement of Watchtower
@@ -247,8 +261,8 @@ printf "\\n\\n"
 # Configure the access to the Deluge Daemon
 # The same credentials can be used for NZBGet's webui
 if [ -z "$daemonun" ]; then
-echo "You need to set a username and password for programs to access"
-echo "The Deluge daemon and NZBGet's API and web interface."
+echo "You need to set a username and password for a of the programs - including."
+echo "The Deluge daemon, NZBGet's API & web interface, and Minio."
 read -r -p "What would you like to use as the access username?: " daemonun
 read -r -p "What would you like to use as the access password?: " daemonpass
 printf "\\n\\n"
@@ -267,13 +281,15 @@ perl -i -pe 's/"move_completed": false,/"move_completed": true,/g'  delugevpn/co
 docker start delugevpn > /dev/null 2>&1
 
 # Configure NZBGet
+[ -d "content/nbzget" ] && mv content/nbzget/* content/ && rmdir content/nbzget
 while [ ! -f nzbget/nzbget.conf ]; do sleep 1; done
 docker stop nzbget > /dev/null 2>&1
 perl -i -pe "s/ControlUsername=nzbget/ControlUsername=$daemonun/g"  nzbget/nzbget.conf
 perl -i -pe "s/ControlPassword=tegbzn6789/ControlPassword=$daemonpass/g"  nzbget/nzbget.conf
+perl -i -pe "s/{MainDir}\/intermediate/{MainDir}\/incomplete/g" nzbget/nzbget.conf
 docker start nzbget > /dev/null 2>&1
 
-# Push the Deluge Daemon and NZBGet Access info the to Auth file - and to the .env file
+# Push the Deluge Daemon, NZBGet Access, and Minio info the to Auth file and the .env file
 echo "$daemonun":"$daemonpass":10 >> ./delugevpn/config/auth
 {
 echo "CPDAEMONUN=$daemonun"
@@ -305,12 +321,6 @@ fi
 if [ -e plexpy/plexpy.db.moved ]; then # Adjust for missed moves
     mv plexpy/ historical/plexpy/
 fi
-
-# Fix the Healthcheck in Minio
-docker exec minio sed -i "s/404/403/g" /usr/bin/healthcheck.sh
-
-# Adjust the permissions on the content folder
-chmod -R 0777 content/
 
 printf "Setup Complete - Open a browser and go to: \\n\\n"
 printf "http://%s \\nOR http://%s If you have appropriate DNS configured.\\n\\n" "$locip" "$thishost"

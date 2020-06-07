@@ -60,7 +60,7 @@ services:
             - ENABLE_PRIVOXY=yes
             - STRICT_PORT_FORWARD=yes
             - LAN_NETWORK=${CIDR_ADDRESS}
-            - NAME_SERVERS=209.222.18.222,37.235.1.174,1.1.1.1,8.8.8.8,209.222.18.218,37.235.1.177,1.0.0.1,8.8.4.4
+            - NAME_SERVERS=209.222.18.222,84.200.69.80,37.235.1.174,1.1.1.1,209.222.18.218,37.235.1.177,84.200.70.40,1.0.0.1
             - DEBUG=false
             - PUID=${PUID}
             - PGID=${PGID}
@@ -178,6 +178,12 @@ services:
             - './minio:/root/.minio'
             - '${PWD}:/export'
         command: server /export
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://${IP_ADDRESS}:9009/minio/health/live"]
+            interval: 5m
+            timeout: 20s
+            retries: 3
+            start_period: 3m
 
     # ----------------------------------------
     # MUXIMUX
@@ -209,12 +215,14 @@ services:
             - '${IP_ADDRESS}:19999:19999'
         cap_add:
             - SYS_PTRACE
+        security_opt:
+            - apparmor:unconfined    
         environment:
             - PGID=${DOCKERGRP}
         volumes:
             - '/proc:/host/proc:ro'
             - '/sys:/host/sys:ro'
-            - '/var/run/docker.sock:/var/run/docker.sock:ro'
+            - '/var/run/docker.sock:/var/run/docker.sock:rw'
 
     # ----------------------------------------
     # NZBGet
@@ -232,7 +240,7 @@ services:
           - '${IP_ADDRESS}:6789:6789'
         volumes:
           - './nzbget:/config'
-          - '${DLDIR}/nbzget:/downloads'
+          - '${DLDIR}:/downloads'
 
     # ----------------------------------------
     # OMBI
@@ -344,7 +352,7 @@ services:
     # SICKCHILL
     # ----------------------------------------
     sickchill:
-        image: linuxserver/sickrage
+        image: linuxserver/sickchill
         container_name: sickchill
         restart: unless-stopped
         network_mode: "bridge"

@@ -1,24 +1,29 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+		"http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<style>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Welcome to Mediabox</title>
+<style type="text/css">
 body {
   font-family: "Open Sans", sans-serif;
+  background-color: lightblue;
 }
 </style>
-</head>
-<a href="https://cash.me/$TomMorgan" target="_blank"><img src="https://img.shields.io/badge/Donate-SquareCash-brightgreen.svg"></a><br />
-<body>
-<body style="background-color:lightblue;">
+<a href="https://cash.me/$TomMorgan" target="_blank"><img src="https://img.shields.io/badge/Donate-SquareCash-brightgreen.svg" alt="badge"></a><br />
 <h1>Welcome to Mediabox!</h1>
 <h3><u>Basic Information & Configuration</u></h3>
-<b><u>Notes:</u></b><br /> 
+<b><u>Notes:</u></b><br />
+<ul>
 <li>Radarr and Couchpotato do the same thing = Movie Management</li>
 <li>Sonarr and SickChill do the same thing = TV Show Management</li>
 <li>Lidar and Headphones do the same thing = Music Management</li>
+</ul>
 -- Generally you will only want to choose/use one of each.<br />
+<ul>
 <li>The <b>Minio</b> login is: minio / minio123.</li>
 <li><b>PROXY</b> The DelugeVPN Container provides an http proxy via the PIA connection at: locip:8118
+</ul>
 <br />
 <h3><u>Manual Configuration steps:</u></h3>  
 <b><u>Couchpotato:</u></b><br />
@@ -120,14 +125,10 @@ When adding libraries to PLEX use these settings:<br />
 <b><u>Portainer:</u></b><br />
 To help you manage your Mediabox Docker containers Portainer is available.<br />
 Portainer is a Docker Management UI to help you work with the containers etc.<br />
-If you notice the <b><u>Minio</u></b> container reporting as "Unhealthy" in Portainer from the commandline on your Mediabox server run this:<br />
-<code>$ docker exec minio sed -i "s/404/403/g" /usr/bin/healthcheck.sh</code><br />
-OR <br>
-From the Minio console in Portainer (Select /bin/sh) run just this: <code>sed -i "s/404/403/g" /usr/bin/healthcheck.sh</code>
 <br /><br />
-<b><u>Watchtower:</u></b><br />
-The Watchtower container monitors the all of the Mediabox containers and if there is an update to any container's base image it updates the container.<br />
-Watchtower will detect the change, download the new image, gracefully stop the container(s), and re-launch them with the new image.<br />
+<b><u>Ouroboros:</u></b><br />
+The ouroboros container monitors the all of the Mediabox containers and if there is an update to any container's base image it updates the container.<br />
+ouroboros will detect the change, download the new image, gracefully stop the container(s), and re-launch them with the new image.<br />
 <h1>Troubleshooting</h1>
 If you are having issues with Mediabox or any of your continers please take look at the settings being used.<br />
 Below are the variables in your .env file: (<b>NOTE</b>: For your security PIA credentials are no longer shown here.)
